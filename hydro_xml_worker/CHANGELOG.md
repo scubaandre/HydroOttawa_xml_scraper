@@ -3,7 +3,8 @@
 ## v0.1.10
 
 ### Changed
-- Replaced deprecated Network.setRequestInterception
+- Removed await page.setRequestInterception(True) (the removed Network.setRequestInterception command) and the req.continue_() handler.
+- Added Fetch-domain equivalents on the existing cdp session: Fetch.enable (scoped with urlPattern: *api/Data/GetUsageData*), a Fetch.requestPaused listener that downloads the XML with the authorization header exactly as before, and Fetch.continueRequest to let the page carry on.
 
 ## v0.1.9‑2
 

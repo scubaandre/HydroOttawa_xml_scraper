@@ -9,7 +9,7 @@ from pyppeteer import connect
 
 # --- CONFIG ---
 
-VERSION = "0.1.9-2"
+VERSION = "0.1.10"
 OPTIONS_PATH = "/data/options.json"
 DOWNLOAD_DIR = "/share/hydro_ottawa"
 LOGIN_JS = """
@@ -188,34 +188,49 @@ async def download_hydro_data():
 
         download_status = {"success": False}
 
-        async def intercept_request(request):
-            if "api/Data/GetUsageData" in request.url:
-                auth = request.headers.get("authorization")
-                if auth:
-                    logger.debug("Intercepted API call. Fetching XML...")
-                    try:
-                        resp = requests.get(
-                            request.url, headers={"Authorization": auth}
-                        )
-                        if resp.status_code == 200:
-                            path = os.path.join(DOWNLOAD_DIR, "hydro_data.xml")
-                            with open(path, "wb") as f:
-                                f.write(resp.content)
-                            download_status["success"] = True
-                            logger.info(f"SUCCESS: File saved to {path}")
-                    except Exception as e:
-                        logger.error(f"Interception failed: {e}")
+        async def handle_request_paused(event):
+            req = event.get("request", {})
+            url = req.get("url", "")
+            auth = req.get("headers", {}).get("authorization")
+            if not auth:
+                auth = req.get("headers", {}).get("Authorization")
+            if "api/Data/GetUsageData" in url and auth and not download_status["success"]:
+                logger.debug("Intercepted API call. Fetching XML...")
+                try:
+                    resp = requests.get(url, headers={"Authorization": auth})
+                    if resp.status_code == 200:
+                        path = os.path.join(DOWNLOAD_DIR, "hydro_data.xml")
+                        with open(path, "wb") as f:
+                            f.write(resp.content)
+                        download_status["success"] = True
+                        logger.info(f"SUCCESS: File saved to {path}")
+                except Exception as e:
+                    logger.error(f"Interception failed: {e}")
 
-        await page.setRequestInterception(True)
-
-        async def handle_request(req):
-            await intercept_request(req)
+        async def continue_paused_request(event):
+            await handle_request_paused(event)
             try:
-                await req.continue_()
+                await cdp.send(
+                    "Fetch.continueRequest", {"requestId": event.get("requestId")}
+                )
             except Exception:
                 pass
 
-        page.on("request", lambda req: asyncio.ensure_future(handle_request(req)))
+        await cdp.send(
+            "Fetch.enable",
+            {
+                "patterns": [
+                    {
+                        "urlPattern": "*api/Data/GetUsageData*",
+                        "requestStage": "Request",
+                    }
+                ]
+            },
+        )
+        cdp.on(
+            "Fetch.requestPaused",
+            lambda event: asyncio.ensure_future(continue_paused_request(event)),
+        )
 
         # 6. Click the necessary checkboxes, set the date, and export
 

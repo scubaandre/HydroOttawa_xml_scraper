@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.10
+
+### Changed
+- Replaced deprecated Network.setRequestInterception
+
 ## v0.1.9‑2
 
 ### Changed

@@ -9,7 +9,7 @@ from pyppeteer import connect
 
 # --- CONFIG ---
 
-VERSION = "0.1.9-2"
+VERSION = "0.1.10"
 OPTIONS_PATH = "/data/options.json"
 DOWNLOAD_DIR = "/share/hydro_ottawa"
 LOGIN_JS = """

@@ -1,6 +1,6 @@
 name: "Hydro Ottawa Green Button Downloader"
 description: "This add-on periodically pulls Hydro Ottawa XML usage data from the green button providerd to include in the HA Energy Dashboard"
-version: "0.1.9-2"
+version: "0.1.10"
 slug: "hydro_xml_worker"
 arch:
   - aarch64
